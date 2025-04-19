@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:4.4.25
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  deepstack:
+    image: deepquestai/deepstack:latest
+    container_name: deepstack
+    environment:
+      - VISION-DETECTION=True
+    ports:
+      - "5000:5000"
+    restart: always
+
+  web:
+    build: .
+    container_name: human-detector
+    expose:
+      - "3000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/human-detector
+      - DEEPSTACK_URL=http://deepstack:5000/v1/vision/detection
+    volumes:
+      - .:/usr/src/app
+    restart: always
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30
+    restart: always
+
+volumes:
+  mongo-data:
