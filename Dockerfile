@@ -1,20 +1,20 @@
 # Base image
 FROM node:18-alpine
 
-# Set working directory
-WORKDIR /src
+# Set working directory inside the container
+WORKDIR /app
 
-# Copy package files first (for caching)
-COPY package*.json ./
+# Copy package files from src/ (not root)
+COPY src/package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN yarn install
 
-# Copy the rest of the app
-COPY . .
+# Copy the rest of the source code into the container
+COPY src/ .
 
-# Expose the port the app runs on
+# Expose the port your app runs on
 EXPOSE 3000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["yarn", "start"]

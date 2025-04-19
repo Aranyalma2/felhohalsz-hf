@@ -25,10 +25,10 @@ jobs:
           node-version: '18'
 
       - name: 📦 Install dependencies
-        run: cd src/ && npm install
+        run: cd src/ && yarn install
 
       - name: 🧪 Run ESLint
-        run: cd src/ && npx eslint . --ext .js,.ts
+        run: cd src/ && yarn lint
 
 
   build:
