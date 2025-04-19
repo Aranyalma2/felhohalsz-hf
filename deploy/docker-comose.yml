@@ -19,15 +19,13 @@ services:
     restart: always
 
   web:
-    build: .
+    image: nemethbalint/human-detector:latest
     container_name: human-detector
     expose:
       - "3000"
     environment:
       - MONGO_URI=mongodb://mongo:27017/human-detector
       - DEEPSTACK_URL=http://deepstack:5000/v1/vision/detection
-    volumes:
-      - .:/usr/src/app
     restart: always
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
