@@ -1,0 +1,19 @@
+{
+  "name": "human-detector",
+  "version": "1.0.0",
+  "description": "Ez a projekt egy képfeltöltő és emberdetektáló webszolgáltatás, amely CI/CD pipeline segítségével épül és automatikusan deploy-ra kerül. A rendszer feliratkozási lehetőséget is biztosít a felhasználók számára, akik értesítést kapnak a feltöltött képekről.",
+  "main": "index.js",
+  "repository": "https://github.com/Aranyalma2/felhohalsz-hf",
+  "author": "Aranyalma2",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix"
+  },
+  "devDependencies": {
+    "@eslint/json": "^0.12.0",
+    "eslint": "^9.25.0",
+    "globals": "^16.0.0"
+  }
+}
