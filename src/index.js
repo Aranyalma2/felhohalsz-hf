@@ -7,12 +7,12 @@ const crypto = require('crypto');
 const axios = require('axios');
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
-require('dotenv').config();
-
 const FormData = require('form-data');
 
+require('dotenv').config();
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -26,6 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 mongoose.connect(process.env.MONGO_URI);
 const conn = mongoose.connection;
 
+// Subscriber model
+const Subscriber = require('./models/Subscriber');
+
 let bucket;
 let gfsFiles;
 conn.once('open', () => {
@@ -37,24 +40,6 @@ conn.once('open', () => {
 // Multer storage config
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
-// Main page with pagination
-app.get('/', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 10;
-  const skip = (page - 1) * limit;
-
-  const total = await gfsFiles.countDocuments({});
-  const pages = Math.ceil(total / limit);
-
-  const files = await gfsFiles.find({})
-    .sort({ uploadDate: -1 })
-    .skip(skip)
-    .limit(limit)
-    .toArray();
-
-  res.render('index', { files, page, pages });
-});
 
 // Upload form
 app.get('/upload', (req, res) => {
@@ -106,7 +91,30 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     });
 
     uploadStream.end(req.file.buffer);
-    uploadStream.on('finish', () => res.redirect('/'));
+    uploadStream.on('finish', async () => {
+      // Notify subscribers via email
+      try {
+        const activeSubscribers = await Subscriber.find({ isActive: true });
+
+        for (const sub of activeSubscribers) {
+          await transporter.sendMail({
+            from: process.env.FROM_EMAIL,
+            to: sub.email,
+            subject: 'New photo uploaded',
+            html: `
+              <p>A new photo has been uploaded.</p>
+              <p><strong>Description:</strong> ${description || 'No description'}</p>
+              <p><strong>People detected:</strong> ${peopleDetected}</p>
+              <p>View image: <a href="${process.env.BASE_URL || ('http://localhost:' + process.env.BACKEND_PORT)}/images/${uploadStream.id}">Open photo</a></p>
+            `
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending emails:', emailErr);
+      }
+
+      res.redirect('/');
+    });
 
   } catch (error) {
     console.error('DeepStack error:', error.message);
@@ -114,6 +122,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
+// Delete all images
 app.delete('/images', async (req, res) => {
   try {
     // List all files in the bucket
@@ -134,8 +143,7 @@ app.delete('/images', async (req, res) => {
   }
 });
 
-
-// Image streaming (e.g., in app.js or another router)
+// Image streaming
 app.get('/images/:id', async (req, res) => {
   console.log('Fetching image with ID:', req.params.id);
   try {
@@ -148,6 +156,35 @@ app.get('/images/:id', async (req, res) => {
     stream.pipe(res);
   } catch (err) {
     res.status(404).send('Image not found');
+  }
+});
+
+// Subscribe form
+app.get('/subscribe', (req, res) => {
+  res.render('subscribe');
+});
+
+// Subscribe 
+app.post('/subscribe', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).send('Email is required.');
+
+  try {
+    let subscriber = await Subscriber.findOne({ email });
+    if (subscriber) {
+      if (!subscriber.isActive) {
+        subscriber.isActive = true;
+        subscriber.subscribedAt = new Date();
+        await subscriber.save();
+      }
+    } else {
+      subscriber = new Subscriber({ email });
+      await subscriber.save();
+    }
+    res.send('Subscribed successfully.');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to subscribe.');
   }
 });
 
