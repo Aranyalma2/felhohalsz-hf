@@ -9,6 +9,8 @@ const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
+const FormData = require('form-data');
+
 const app = express();
 const PORT = 3000;
 
@@ -67,26 +69,27 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   const fileName = crypto.randomBytes(16).toString('hex') + path.extname(req.file.originalname);
 
   try {
-    const formData = new FormData();
-    formData.append('image', req.file.buffer, {
+    const form = new FormData();
+    form.append('image', req.file.buffer, {
       filename: fileName,
-      contentType: req.file.mimetype,
+      contentType: req.file.mimetype
     });
-    formData.append('min_confidence', '0.4');
+    form.append('min_confidence', '0.4');
 
-    const response = await axios.post(process.env.DEEPSTACK_URL, formData, {
-      headers: formData.getHeaders(),
+    const response = await axios.post(process.env.DEEPSTACK_URL, form, {
+      headers: form.getHeaders(),
       maxBodyLength: Infinity,
       maxContentLength: Infinity
     });
 
-    const detections = response.data.predictions
+    const detections = (response.data.predictions || [])
       .filter(pred => pred.label === 'person')
       .map(pred => ({
         x_min: pred.x_min,
         y_min: pred.y_min,
         x_max: pred.x_max,
-        y_max: pred.y_max
+        y_max: pred.y_max,
+        confidence: pred.confidence
       }));
 
     const peopleDetected = detections.length;
@@ -110,6 +113,27 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     res.status(500).send('Error processing image');
   }
 });
+
+app.delete('/images', async (req, res) => {
+  try {
+    // List all files in the bucket
+    const filesCursor = bucket.find();
+    const files = await filesCursor.toArray();
+
+    if (files.length === 0) {
+      return res.status(404).json({ message: 'No image found to delete.' });
+    }
+
+    // Delete each file by _id
+    await Promise.all(files.map(file => bucket.delete(file._id)));
+
+   res.redirect('/');
+  } catch (err) {
+    console.error('Error deleting images:', err);
+    res.status(500).json({ error: 'Failed to delete images.' });
+  }
+});
+
 
 // Image streaming (e.g., in app.js or another router)
 app.get('/images/:id', async (req, res) => {

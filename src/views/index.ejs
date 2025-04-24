@@ -1,27 +1,84 @@
 <h1>Uploaded Photos</h1>
-<a href="/upload">Upload new photo</a>
+<a href="/upload" class="button">Upload New Photo</a>
+
+<form id="deleteAllForm" method="POST" action="/images?_method=DELETE" onsubmit="return confirm('Are you sure you want to delete all images?');">
+  <button type="submit" style="background-color: #e74c3c; color: white; padding: 10px; border: none; cursor: pointer;">
+    Delete All Images
+  </button>
+</form>
 
 <% if (files.length === 0) { %>
-  <p>No photos uploaded yet.</p>
+<p>No photos uploaded yet.</p>
 <% } else { %>
-  <ul>
-    <% files.forEach(file => { %>
-      <li>
-        <strong><%= file.filename %></strong><br>
-        <small><%= new Date(file.uploadDate).toLocaleString() %></small><br>
-        <img src="/images/<%= file._id %>" style="max-width: 200px;"><br>
-        <em><%= file.metadata?.description || '' %></em>
-      </li>
-    <% }) %>
-  </ul>
-
-  <div>
-    <% for (let i = 1; i <= pages; i++) { %>
-      <% if (i === page) { %>
-        <strong><%= i %></strong>
-      <% } else { %>
-        <a href="/?page=<%= i %>"><%= i %></a>
-      <% } %>
-    <% } %>
+<div class="gallery">
+  <% files.forEach(file => { %>
+  <div class="image-wrapper" style="margin-bottom: 20px;">
+    <p><strong><%= file.filename %></strong></p>
+    <p><em><%= file.metadata?.description || '' %></em></p>
+    <p>People detected: <%= file.metadata?.peopleDetected || 0 %></p>
+    <small><%= new Date(file.uploadDate).toLocaleString() %></small>
+    <br>
+    <canvas class="detected-canvas" data-src="/images/<%= file._id %>" data-detections='<%= JSON.stringify(file.metadata?.detections || []) %>'></canvas>
   </div>
+  <% }) %>
+</div>
+
+<div style="margin-top: 20px;">
+  <% for (let i = 1; i <= pages; i++) { %>
+  <% if (i === page) { %>
+  <strong><%= i %></strong>
+  <% } else { %>
+  <a href="/?page=<%= i %>"><%= i %></a>
+  <% } %>
+  <% } %>
+</div>
 <% } %>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.detected-canvas').forEach(async canvas => {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = canvas.dataset.src;
+
+      const detections = JSON.parse(canvas.dataset.detections || '[]');
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        ctx.drawImage(img, 0, 0);
+
+        detections.forEach((det, index) => {
+          const color = `hsl(${index * 60 % 360}, 100%, 50%)`;
+          const x = det.x_min;
+          const y = det.y_min;
+          const width = det.x_max - det.x_min;
+          const height = det.y_max - det.y_min;
+
+          // Draw rectangle
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, width, height);
+
+          // Prepare confidence text
+          const confidence = `${Math.round(det.confidence * 100)}%`;
+          ctx.font = 'bold 16px sans-serif';
+
+          // Measure text width and height (approximate)
+          const textWidth = ctx.measureText(confidence).width;
+          const textHeight = 16;
+
+          // Draw background rectangle for text (slightly padding)
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.fillRect(x, y - textHeight, textWidth + 8, textHeight + 4);
+
+          // Draw confidence text in rectangle color on top-left corner
+          ctx.fillStyle = color;
+          ctx.textBaseline = 'top';
+          ctx.fillText(confidence, x + 4, y - textHeight + 2);
+        });
+      };
+    });
+  });
+</script>

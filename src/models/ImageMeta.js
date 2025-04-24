@@ -4,7 +4,8 @@ const detectionSchema = new mongoose.Schema({
   x_min: Number,
   y_min: Number,
   x_max: Number,
-  y_max: Number
+  y_max: Number,
+  confidence: Number
 }, { _id: false });
 
 const imageMetaSchema = new mongoose.Schema({
