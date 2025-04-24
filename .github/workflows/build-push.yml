@@ -22,13 +22,13 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: 📦 Install dependencies
-        run: cd src && npm install
+      - name: 📦 Install dependencies with Yarn
+        run: cd src && yarn install --frozen-lockfile
 
       - name: 🔍 Run ESLint
-        run: cd src && npx eslint . --ext .js,.ts
+        run: cd src && yarn eslint . --ext .js,.ts
 
   docker:
     name: 🐳 Build & Push Docker Image
