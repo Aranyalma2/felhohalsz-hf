@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.6'
 
 services:
   mongo:
@@ -40,13 +40,15 @@ services:
     depends_on:
       - web
     restart: always
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30
+    command: --interval 30 --label-enable
     restart: always
 
 volumes:
