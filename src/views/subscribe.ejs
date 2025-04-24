@@ -1,4 +1,11 @@
-<form method="POST" action="/subscribe">
-  <input type="email" name="email" placeholder="Your email" required />
-  <button type="submit">Subscribe</button>
-</form>
+<div class="container py-5">
+  <h1 class="mb-4">Subscribe for New Image Uploads</h1>
+  <form method="POST" action="/subscribe" class="row g-3 needs-validation" novalidate>
+    <div class="col-auto">
+      <input type="email" name="email" class="form-control" placeholder="Your email" required>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-success">Subscribe</button>
+    </div>
+  </form>
+</div>

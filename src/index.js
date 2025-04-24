@@ -22,6 +22,10 @@ app.use(expressLayouts);
 app.set('layout', 'layouts/main');
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use("/css", express.static(path.join("node_modules", "bootstrap", "dist", "css")));
+app.use("/js", express.static(path.join("node_modules", "bootstrap", "dist", "js")));
+app.use("/js", express.static(path.join("node_modules", "jquery", "dist")));
+
 // MongoDB
 mongoose.connect(process.env.MONGO_URI);
 const conn = mongoose.connection;
