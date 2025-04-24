@@ -188,6 +188,24 @@ app.post('/subscribe', async (req, res) => {
   }
 });
 
+// Main page with pagination
+app.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const skip = (page - 1) * limit;
+
+  const total = await gfsFiles.countDocuments({});
+  const pages = Math.ceil(total / limit);
+
+  const files = await gfsFiles.find({})
+    .sort({ uploadDate: -1 })
+    .skip(skip)
+    .limit(limit)
+    .toArray();
+
+  res.render('index', { files, page, pages });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);
