@@ -7,9 +7,9 @@ const crypto = require('crypto');
 const axios = require('axios');
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
-require('dotenv').config();
-
 const FormData = require('form-data');
+
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
@@ -26,6 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 mongoose.connect(process.env.MONGO_URI);
 const conn = mongoose.connection;
 
+// Subscriber model
+const Subscriber = require('./models/Subscriber');
+
 let bucket;
 let gfsFiles;
 conn.once('open', () => {
@@ -37,24 +40,6 @@ conn.once('open', () => {
 // Multer storage config
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
-// Main page with pagination
-app.get('/', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 10;
-  const skip = (page - 1) * limit;
-
-  const total = await gfsFiles.countDocuments({});
-  const pages = Math.ceil(total / limit);
-
-  const files = await gfsFiles.find({})
-    .sort({ uploadDate: -1 })
-    .skip(skip)
-    .limit(limit)
-    .toArray();
-
-  res.render('index', { files, page, pages });
-});
 
 // Upload form
 app.get('/upload', (req, res) => {
@@ -114,6 +99,23 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
+// Image streaming
+app.get('/images/:id', async (req, res) => {
+  console.log('Fetching image with ID:', req.params.id);
+  try {
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'images'
+    });
+
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+    const stream = bucket.openDownloadStream(fileId);
+    stream.pipe(res);
+  } catch (err) {
+    res.status(404).send('Image not found');
+  }
+});
+
+// Delete all images
 app.delete('/images', async (req, res) => {
   try {
     // List all files in the bucket
@@ -134,20 +136,27 @@ app.delete('/images', async (req, res) => {
   }
 });
 
+// Subscribe 
+app.post('/subscribe', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).send('Email is required.');
 
-// Image streaming (e.g., in app.js or another router)
-app.get('/images/:id', async (req, res) => {
-  console.log('Fetching image with ID:', req.params.id);
   try {
-    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-      bucketName: 'images'
-    });
-
-    const fileId = new mongoose.Types.ObjectId(req.params.id);
-    const stream = bucket.openDownloadStream(fileId);
-    stream.pipe(res);
+    let subscriber = await Subscriber.findOne({ email });
+    if (subscriber) {
+      if (!subscriber.isActive) {
+        subscriber.isActive = true;
+        subscriber.subscribedAt = new Date();
+        await subscriber.save();
+      }
+    } else {
+      subscriber = new Subscriber({ email });
+      await subscriber.save();
+    }
+    res.send('Subscribed successfully.');
   } catch (err) {
-    res.status(404).send('Image not found');
+    console.error(err);
+    res.status(500).send('Failed to subscribe.');
   }
 });
 
