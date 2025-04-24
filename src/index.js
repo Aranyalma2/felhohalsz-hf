@@ -12,7 +12,7 @@ const FormData = require('form-data');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -91,27 +91,34 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     });
 
     uploadStream.end(req.file.buffer);
-    uploadStream.on('finish', () => res.redirect('/'));
+    uploadStream.on('finish', async () => {
+      // Notify subscribers via email
+      try {
+        const activeSubscribers = await Subscriber.find({ isActive: true });
+
+        for (const sub of activeSubscribers) {
+          await transporter.sendMail({
+            from: process.env.FROM_EMAIL,
+            to: sub.email,
+            subject: 'New photo uploaded',
+            html: `
+              <p>A new photo has been uploaded.</p>
+              <p><strong>Description:</strong> ${description || 'No description'}</p>
+              <p><strong>People detected:</strong> ${peopleDetected}</p>
+              <p>View image: <a href="${process.env.BASE_URL || ('http://localhost:' + process.env.BACKEND_PORT)}/images/${uploadStream.id}">Open photo</a></p>
+            `
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending emails:', emailErr);
+      }
+
+      res.redirect('/');
+    });
 
   } catch (error) {
     console.error('DeepStack error:', error.message);
     res.status(500).send('Error processing image');
-  }
-});
-
-// Image streaming
-app.get('/images/:id', async (req, res) => {
-  console.log('Fetching image with ID:', req.params.id);
-  try {
-    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-      bucketName: 'images'
-    });
-
-    const fileId = new mongoose.Types.ObjectId(req.params.id);
-    const stream = bucket.openDownloadStream(fileId);
-    stream.pipe(res);
-  } catch (err) {
-    res.status(404).send('Image not found');
   }
 });
 
@@ -134,6 +141,27 @@ app.delete('/images', async (req, res) => {
     console.error('Error deleting images:', err);
     res.status(500).json({ error: 'Failed to delete images.' });
   }
+});
+
+// Image streaming
+app.get('/images/:id', async (req, res) => {
+  console.log('Fetching image with ID:', req.params.id);
+  try {
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'images'
+    });
+
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+    const stream = bucket.openDownloadStream(fileId);
+    stream.pipe(res);
+  } catch (err) {
+    res.status(404).send('Image not found');
+  }
+});
+
+// Subscribe form
+app.get('/subscribe', (req, res) => {
+  res.render('subscribe');
 });
 
 // Subscribe 
