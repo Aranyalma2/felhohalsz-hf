@@ -1,0 +1,27 @@
+<h1>Uploaded Photos</h1>
+<a href="/upload">Upload new photo</a>
+
+<% if (files.length === 0) { %>
+  <p>No photos uploaded yet.</p>
+<% } else { %>
+  <ul>
+    <% files.forEach(file => { %>
+      <li>
+        <strong><%= file.filename %></strong><br>
+        <small><%= new Date(file.uploadDate).toLocaleString() %></small><br>
+        <img src="/images/<%= file._id %>" style="max-width: 200px;"><br>
+        <em><%= file.metadata?.description || '' %></em>
+      </li>
+    <% }) %>
+  </ul>
+
+  <div>
+    <% for (let i = 1; i <= pages; i++) { %>
+      <% if (i === page) { %>
+        <strong><%= i %></strong>
+      <% } else { %>
+        <a href="/?page=<%= i %>"><%= i %></a>
+      <% } %>
+    <% } %>
+  </div>
+<% } %>

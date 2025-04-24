@@ -52,18 +52,95 @@ A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és 
 
 ## 🛠️ Specifikáció
 
-### Funkcionális követelmeények
+### Funkcionális követelmények
 
 | Sorszám | Funkció neve | Leírás | Felhasználó típusa |
 | ------------- | ------------- | ------------- | ------------- |
-| F1 | Kép feltöltése | A felhasználó képet és hozzá tartozó leírást tud feltölteni a rendszerbe | Regisztrált felhasználó |
+| F1 | Kép feltöltése | A felhasználó képet és hozzá tartozó leírást tud feltölteni a rendszerbe | Bármely látogató |
 | F2 | Ember detektálása | A rendszer automatikusan detektálja az embereket a feltöltött képeken és elmenti az eredményt | Rendszer (automatizált) |
 | F3 | Kép megjelenítése bekeretezéssel | A feltöltött kép megjelenítése a weboldalon az emberek körberajzolt (keretezett) formájában | Bármely látogató |
-| F4 | Felhasználói feliratkozás | A felhasználó feliratkozhat a képek frissítéséről szóló értesítésekre | Vendég / Regisztrált |
+| F4 | Felhasználói feliratkozás | A felhasználó feliratkozhat a képek frissítéséről szóló értesítésekre | Bármely látogató |
 | F5 | Értesítés küldése | Új kép feltöltésekor automatikusan kiküldésre kerül egy értesítés a feliratkozott felhasználóknak | Rendszer |
-| F6 | Emberdetektálási eredmény statisztika | Az értesítés tartalmazza a képen talált emberek számát is | Rendszer → Felhasználó |
+| F6 | Emberdetektálási eredmény statisztika | Az értesítés tartalmazza a képen talált emberek számát is | Rendszer → Feliratkozott látogató |
 | F7 | Képek listázása | A weboldalon megjelennek az eddig feltöltött képek és azok leírásai | Bármely látogató |
 | F8 | Kép és leírás páros tárolása | A rendszer adatbázisban eltárolja a képet és hozzá tartozó leírást | Rendszer |
+
+### Webszolgáltatás architektúra
+
+```
+               +--------------------+
+               |      Frontend      |
+               |  (HTML/JS Web UI)  |
+               +--------------------+
+                         |
+                         v
+               +--------------------+
+               |    Backend API     |
+               | (Node/Express+ejs) |
+               +--------------------+
+                         ^
+                         |
+      +------------------+------------------+
+      |                  |                  |
+      v                  |                  v
++-------------------+    |      +------------------------+
+|     MongoDB       |    |      |   Human Detection API  |
+| (képek, user-ek)  |    |      |      (DeepStack)       |
++-------------------+    |      +------------------------+
+                         |                   |
+                         |                   v
+                         |   [Kép elemzése, koordináták visszaadása]
+                         v
+                +--------------------+
+                |   Notification     |
+                |     Service        |
+                |   (Nodemailer)     |
+                +--------------------+
+
+            🔁 Watchtower (CD)
+            🌐 Nginx (Proxy)
+```
+
+| Komponens | Technológia | Funkció |
+| ------------- | ------------- | ------------- |
+| Frontend | HTML + JS | Kép feltöltés, UI megjelenítés |
+| Backend | Node.js + Express + EJS | Képfeldolgozás, feliratkozás kezelése, szerveroldali renderelés |
+| MongoDB | MongoDB | Képek, felhasználók és detekciók tárolása |
+| Human Detection | DeepStack | Emberek automatikus felismerése képeken |
+| Notification | Node.js + email service | Értesítések küldése feliratkozóknak |
+
+### Kommunikációs interfészek a szolgáltatások között
+
+Fronend <-> Backend: HTTP
+Backend <-> MongoDB: MongoDB Wire
+Backend <-> DeepStack: REST
+Backend <-> Nodemailer: SMTP
+
+### Backend által használt technológiák
+
+- Express (Webserver)
+- EJS (Server-side rendering)
+- Mongoose (ODM)
+- Multer + GridFS (File upload & storage)
+- Axios (HTTP Client)
+
+### Projekt struktúra
+
+```
+📁 src/
+├── models/               # Adatbázis séma objektumok
+├── routes/ (later)
+│   └── index.js          # Főoldal, feltöltés űrlap
+│   └── upload.js         # Feltöltés kezelése
+│   └── images.js         # Kép elérése GridFS-ből
+├── views/
+│   └── layouts/          # Ejs layout modellek
+│   └── index.ejs         # Nézetek
+├── public/               # statikus fájlok
+├── index.js
+├── .env
+└── package.json
+```
 
 ### Használt adatszerkezetek
 
@@ -123,66 +200,3 @@ A collection ```metadata``` attribútuma.
 - email: a felhasználó e-mail címe
 - subscribedAt: mikor iratkozott fel
 - isActive: aktív-e a feliratkozás
-
-### Webszolgáltatás architektúra
-
-```
-               +--------------------+
-               |      Frontend      |
-               |  (HTML/JS Web UI)  |
-               +--------------------+
-                         |
-                         v
-               +--------------------+
-               |    Backend API     |
-               | (Node/Express+ejs) |
-               +--------------------+
-                         ^
-                         |
-      +------------------+------------------+
-      |                  |                  |
-      v                  |                  v
-+-------------------+    |      +------------------------+
-|     MongoDB       |    |      |   Human Detection API  |
-| (képek, user-ek)  |    |      |      (DeepStack)       |
-+-------------------+    |      +------------------------+
-                         |                   |
-                         |                   v
-                         |   [Kép elemzése, koordináták visszaadása]
-                         v
-                +--------------------+
-                |   Notification     |
-                |     Service        |
-                |     (email)        |
-                +--------------------+
-
-            🔁 Watchtower (CD frissítésekhez)
-            🌐 Nginx (Kifelé proxy)
-```
-
-| Komponens | Technológia | Funkció |
-| ------------- | ------------- | ------------- |
-| Frontend | HTML + JS | Kép feltöltés, UI megjelenítés |
-| Backend | Node.js + Express + EJS | Képfeldolgozás, feliratkozás kezelése, szerveroldali renderelés |
-| MongoDB | MongoDB | Képek, felhasználók és detekciók tárolása |
-| Human Detection | DeepStack | Emberek automatikus felismerése képeken |
-| Notification | Node.js + email service | Értesítések küldése feliratkozóknak |
-
-### Projekt struktúra
-
-```
-📁 src/
-├── models/
-│   └── image.js          # Metaadatok a képről
-├── routes/
-│   └── index.js          # Főoldal, feltöltés űrlap
-│   └── upload.js         # Feltöltés kezelése
-│   └── images.js         # Kép elérése GridFS-ből
-├── views/
-│   └── index.ejs
-│   └── gallery.ejs       # Képgaléria
-├── public/               # statikus fájlok
-├── index.js
-├── .env
-└── package.json
-```

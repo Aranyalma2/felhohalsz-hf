@@ -1,0 +1,45 @@
+<h1>Upload Photo</h1>
+<a href="/">← Back to gallery</a>
+
+<form action="/upload" method="POST" enctype="multipart/form-data">
+  <div>
+    <label for="image">Select image:</label>
+    <input type="file" name="image" id="imageInput" accept="image/*" required>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <label for="description">Description:</label>
+    <input type="text" name="description" id="description" placeholder="e.g. People in the park" required>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <button type="submit">Upload</button>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h3>Preview:</h3>
+    <img id="previewImage" src="#" alt="Image preview" style="max-width: 300px; display: none;" />
+  </div>
+</form>
+
+<script>
+  const imageInput = document.getElementById('imageInput');
+  const previewImage = document.getElementById('previewImage');
+
+  imageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        previewImage.src = e.target.result;
+        previewImage.style.display = 'block';
+      };
+
+      reader.readAsDataURL(file);
+    } else {
+      previewImage.src = '#';
+      previewImage.style.display = 'none';
+    }
+  });
+</script>
