@@ -92,9 +92,9 @@ A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és 
                          |   [Kép elemzése, koordináták visszaadása]
                          v
                 +--------------------+
-                |   Notification     |
-                |     Service        |
-                |   (Nodemailer)     |
+                |    Notification    |
+                |      Service       |
+                |   (Email service)  |
                 +--------------------+
 
             🔁 Watchtower (CD)
@@ -107,14 +107,14 @@ A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és 
 | Backend | Node.js + Express + EJS | Képfeldolgozás, feliratkozás kezelése, szerveroldali renderelés |
 | MongoDB | MongoDB | Képek, felhasználók és detekciók tárolása |
 | Human Detection | DeepStack | Emberek automatikus felismerése képeken |
-| Notification | Node.js + email service | Értesítések küldése feliratkozóknak |
+| Notification | Email service (SMTP) | Értesítések küldése feliratkozóknak |
 
 ### Kommunikációs interfészek a szolgáltatások között
 
 Fronend <-> Backend: HTTP
 Backend <-> MongoDB: MongoDB Wire
 Backend <-> DeepStack: REST
-Backend <-> Nodemailer: SMTP
+Backend <-> Email sender: SMTP
 
 ### Backend által használt technológiák
 
@@ -123,19 +123,18 @@ Backend <-> Nodemailer: SMTP
 - Mongoose (ODM)
 - Multer + GridFS (File upload & storage)
 - Axios (HTTP Client)
+- Nodemailer (SMTP client)
 
 ### Projekt struktúra
 
 ```
 📁 src/
 ├── models/               # Adatbázis séma objektumok
-├── routes/ (later)
-│   └── index.js          # Főoldal, feltöltés űrlap
-│   └── upload.js         # Feltöltés kezelése
-│   └── images.js         # Kép elérése GridFS-ből
 ├── views/
 │   └── layouts/          # Ejs layout modellek
 │   └── index.ejs         # Nézetek
+│   └── upload.ejs
+│   └── subscribe.ejs
 ├── public/               # statikus fájlok
 ├── index.js
 ├── .env
