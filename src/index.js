@@ -8,6 +8,7 @@ const axios = require('axios');
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 const FormData = require('form-data');
+const nodemailer = require('nodemailer');
 
 require('dotenv').config();
 
@@ -44,6 +45,17 @@ conn.once('open', () => {
 // Multer storage config
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// Nodemailer config
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 465,
+  secure: true,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 // Upload form
 app.get('/upload', (req, res) => {
@@ -190,6 +202,24 @@ app.post('/subscribe', async (req, res) => {
     console.error(err);
     res.status(500).send('Failed to subscribe.');
   }
+});
+
+// Main page with pagination
+app.get('/', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const skip = (page - 1) * limit;
+
+  const total = await gfsFiles.countDocuments({});
+  const pages = Math.ceil(total / limit);
+
+  const files = await gfsFiles.find({})
+    .sort({ uploadDate: -1 })
+    .skip(skip)
+    .limit(limit)
+    .toArray();
+
+  res.render('index', { files, page, pages });
 });
 
 
