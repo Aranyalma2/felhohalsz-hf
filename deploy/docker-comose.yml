@@ -26,6 +26,12 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/human-detector
       - DEEPSTACK_URL=http://deepstack:5000/v1/vision/detection
+      - SMTP_HOST=mail.example.com
+      - SMTP_PORT=465
+      - SMTP_USER=user@example.com
+      - SMTP_PASS=PASSWORD
+      - FROM_EMAIL=user@example.com
+      - BASE_URL=http://mydomain.com
     restart: always
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
