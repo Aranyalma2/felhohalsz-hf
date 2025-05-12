@@ -1,43 +1,58 @@
-<h1>Uploaded Photos</h1>
-<a href="/upload" class="button">Upload New Photo</a>
-<a href="/subscribe" class="button">Subscribe for new images</a>
-
-<form id="deleteAllForm" method="POST" action="/images?_method=DELETE" onsubmit="return confirm('Are you sure you want to delete all images?');">
-  <button type="submit" style="background-color: #e74c3c; color: white; padding: 10px; border: none; cursor: pointer;">
-    Delete All Images
-  </button>
-</form>
-
-<% if (files.length === 0) { %>
-<p>No photos uploaded yet.</p>
-<% } else { %>
-<div class="gallery">
-  <% files.forEach(file => { %>
-  <div class="image-wrapper" style="margin-bottom: 20px;">
-    <p><strong><%= file.filename %></strong></p>
-    <p><em><%= file.metadata?.description || '' %></em></p>
-    <p>People detected: <%= file.metadata?.peopleDetected || 0 %></p>
-    <small><%= new Date(file.uploadDate).toLocaleString() %></small>
-    <br>
-    <canvas class="detected-canvas" data-src="/images/<%= file._id %>" data-detections='<%= JSON.stringify(file.metadata?.detections || []) %>'></canvas>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Uploaded Photos</h1>
+    <div class="d-flex gap-2">
+      <a href="/upload" class="btn btn-primary">Upload New Photo</a>
+      <a href="/subscribe" class="btn btn-info text-white">Subscribe for New Images</a>
+      <form id="deleteAllForm" method="POST" action="/images?_method=DELETE" onsubmit="return confirm('Are you sure you want to delete all images?');">
+        <button type="submit" class="btn btn-danger">Delete All Images</button>
+      </form>
+    </div>
   </div>
-  <% }) %>
-</div>
 
-<div style="margin-top: 20px;">
-  <% for (let i = 1; i <= pages; i++) { %>
-  <% if (i === page) { %>
-  <strong><%= i %></strong>
+  <% if (files.length === 0) { %>
+    <div class="alert alert-info">No photos uploaded yet.</div>
   <% } else { %>
-  <a href="/?page=<%= i %>"><%= i %></a>
-  <% } %>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      <% files.forEach((file, index) => { %>
+        <div class="col">
+          <div class="card shadow-sm">
+            <canvas class="detected-canvas card-img-top"
+              data-src="/images/<%= file._id %>"
+              data-detections='<%= JSON.stringify(file.metadata?.detections || []) %>'>
+            </canvas>
+            <div class="card-body">
+              <h5 class="card-title"><%= file.filename %></h5>
+              <% if (file.metadata?.description) { %>
+                <p class="card-text"><%= file.metadata.description %></p>
+              <% } %>
+              <p class="card-text mb-1">
+                <strong>People detected:</strong> <%= file.metadata?.peopleDetected || 0 %>
+              </p>
+              <p class="card-text text-muted"><%= new Date(file.uploadDate).toLocaleString() %></p>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <% if (pages > 1) { %>
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+          <% for (let i = 1; i <= pages; i++) { %>
+            <li class="page-item <%= i === page ? 'active' : '' %>">
+              <a class="page-link" href="/?page=<%= i %>"><%= i %></a>
+            </li>
+          <% } %>
+        </ul>
+      </nav>
+    <% } %>
   <% } %>
 </div>
-<% } %>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.detected-canvas').forEach(async canvas => {
+    document.querySelectorAll('.detected-canvas').forEach(canvas => {
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.src = canvas.dataset.src;
@@ -62,19 +77,17 @@
           ctx.lineWidth = 2;
           ctx.strokeRect(x, y, width, height);
 
-          // Prepare confidence text
+          // Draw confidence text
           const confidence = `${Math.round(det.confidence * 100)}%`;
           ctx.font = 'bold 16px sans-serif';
-
-          // Measure text width and height (approximate)
           const textWidth = ctx.measureText(confidence).width;
           const textHeight = 16;
 
-          // Draw background rectangle for text (slightly padding)
+          // Draw background rectangle
           ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
           ctx.fillRect(x, y - textHeight, textWidth + 8, textHeight + 4);
 
-          // Draw confidence text in rectangle color on top-left corner
+          // Draw text in detection color
           ctx.fillStyle = color;
           ctx.textBaseline = 'top';
           ctx.fillText(confidence, x + 4, y - textHeight + 2);
