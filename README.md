@@ -6,16 +6,16 @@
 <img alt="License" src="https://img.shields.io/github/license/Aranyalma2/felhohalsz-hf?color=56BEB8">
 </p>
 
-Ez a projekt egy képfeltöltő és emberdetektáló webszolgáltatás, amely CI/CD pipeline segítségével épül és automatikusan deploy-ra kerül. A rendszer feliratkozási lehetőséget is biztosít a felhasználók számára, akik értesítést kapnak a feltöltött képekről.
+This project is an image upload and human detection web service that is built and automatically deployed via a CI/CD pipeline. The system also provides a subscription option for users who will receive notifications about uploaded images.
 
 ---
 
-## 🧱 Architektúra
+## 🧱 Architecture
 
 - **Backend**: Node.js (Express + EJS)
-- **Adatbázis**: MongoDB
-- **Emberi alakok felismerése**: DeepStack
-- **Értesítési rendszer**: Email
+- **Database**: MongoDB
+- **Human Detection**: DeepStack
+- **Notification System**: Email
 - **CD**: Docker Compose + Watchtower
 - **CI**: GitHub Actions (Docker image build + push)
 
@@ -25,47 +25,47 @@ Ez a projekt egy képfeltöltő és emberdetektáló webszolgáltatás, amely CI
 
 ### CI: GitHub Actions (build & push Docker image)
 
-- Kód push esetén lefutó automatikus lépések:
-  1. **Build**: Node.js alkalmazás buildelése
-  2. **Lint/Test**: ESLint + Unit tesztek
-  3. **Docker image build**: Dockerfile alapján
-  4. **Docker image push**: Docker Hub-ra
-  5. **Deploy**: Automatikus deployment
+- Automatic steps triggered on code push:
+  1. **Build**: Build the Node.js application
+  2. **Lint/Test**: ESLint + Unit tests
+  3. **Docker image build**: Based on Dockerfile
+  4. **Docker image push**: To Docker Hub
+  5. **Deploy**: Automatic deployment
 
-### CD: Watchtower (automatikus frissítés)
+### CD: Watchtower (automatic update)
 
-A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és újraindítja őket, ha új verzió érkezik.
+Watchtower is a container that monitors other containers’ images and restarts them when a new version is available.
 
-#### Watchtower beállítások:
+#### Watchtower settings:
 
-- Figyeli a Docker Hub-on újrapublikált image-eket
-- Új image érkezésekor letölti és újraindítja a konténert
+- Monitors newly published images on Docker Hub
+- Downloads and restarts the container when a new image is detected
 
 ---
 
-## 🧪 Fejlesztési folyamat
+## 🧪 Development Workflow
 
-- Github workflow
-- Main branch automatikus deploy
-- Feature branch-ek
+- GitHub workflow
+- Automatic deployment from the main branch
+- Feature branches
 - Yarn package manager
 
-## 🛠️ Specifikáció
+## 🛠️ Specification
 
-### Funkcionális követelmények
+### Functional Requirements
 
-| Sorszám | Funkció neve | Leírás | Felhasználó típusa |
-| ------------- | ------------- | ------------- | ------------- |
-| F1 | Kép feltöltése | A felhasználó képet és hozzá tartozó leírást tud feltölteni a rendszerbe | Bármely látogató |
-| F2 | Ember detektálása | A rendszer automatikusan detektálja az embereket a feltöltött képeken és elmenti az eredményt | Rendszer (automatizált) |
-| F3 | Kép megjelenítése bekeretezéssel | A feltöltött kép megjelenítése a weboldalon az emberek körberajzolt (keretezett) formájában | Bármely látogató |
-| F4 | Felhasználói feliratkozás | A felhasználó feliratkozhat a képek frissítéséről szóló értesítésekre | Bármely látogató |
-| F5 | Értesítés küldése | Új kép feltöltésekor automatikusan kiküldésre kerül egy értesítés a feliratkozott felhasználóknak | Rendszer |
-| F6 | Emberdetektálási eredmény statisztika | Az értesítés tartalmazza a képen talált emberek számát is | Rendszer → Feliratkozott látogató |
-| F7 | Képek listázása | A weboldalon megjelennek az eddig feltöltött képek és azok leírásai | Bármely látogató |
-| F8 | Kép és leírás páros tárolása | A rendszer adatbázisban eltárolja a képet és hozzá tartozó leírást | Rendszer |
+| ID | Feature Name | Description | User Type |
+|----|--------------|-------------|-----------|
+| F1 | Image Upload | Users can upload an image along with a description to the system | Any visitor |
+| F2 | Human Detection | The system automatically detects people in uploaded images and saves the result | System (automated) |
+| F3 | Display Image with Bounding Boxes | Uploaded images are displayed on the website with people highlighted | Any visitor |
+| F4 | User Subscription | Users can subscribe to receive updates about new images | Any visitor |
+| F5 | Send Notification | Upon a new image upload, a notification is sent to subscribed users | System |
+| F6 | Human Detection Statistics | The notification includes the number of people detected in the image | System → Subscribed visitor |
+| F7 | List Images | All uploaded images and their descriptions are displayed on the website | Any visitor |
+| F8 | Store Image and Description Pair | The system stores the image and its description in the database | System |
 
-### Webszolgáltatás architektúra
+### Web Service Architecture
 
 ```
                +--------------------+
@@ -85,11 +85,11 @@ A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és 
       v                  |                  v
 +-------------------+    |      +------------------------+
 |     MongoDB       |    |      |   Human Detection API  |
-| (képek, user-ek)  |    |      |      (DeepStack)       |
+| (pic,meta,users)  |    |      |      (DeepStack)       |
 +-------------------+    |      +------------------------+
                          |                   |
                          |                   v
-                         |   [Kép elemzése, koordináták visszaadása]
+                         |    [Image analysis, return coordinates]
                          v
                 +--------------------+
                 |    Notification    |
@@ -97,26 +97,27 @@ A Watchtower egy konténer, amely figyeli a többi konténer új image-eit, és 
                 |   (Email service)  |
                 +--------------------+
 
-            🔁 Watchtower (CD)
-            🌐 Nginx (Proxy)
+    🔁 Watchtower (CD)
+    🌐 Nginx (Proxy)
 ```
 
-| Komponens | Technológia | Funkció |
-| ------------- | ------------- | ------------- |
-| Frontend | HTML + JS | Kép feltöltés, UI megjelenítés |
-| Backend | Node.js + Express + EJS | Képfeldolgozás, feliratkozás kezelése, szerveroldali renderelés |
-| MongoDB | MongoDB | Képek, felhasználók és detekciók tárolása |
-| Human Detection | DeepStack | Emberek automatikus felismerése képeken |
-| Notification | Email service (SMTP) | Értesítések küldése feliratkozóknak |
 
-### Kommunikációs interfészek a szolgáltatások között
+| Component | Technology | Function |
+|----------|------------|----------|
+| Frontend | HTML + JS | Image upload, UI display |
+| Backend | Node.js + Express + EJS | Image processing, subscription handling, server-side rendering |
+| MongoDB | MongoDB | Storage of images, users, and detections |
+| Human Detection | DeepStack | Automatic detection of people in images |
+| Notification | Email service (SMTP) | Sending notifications to subscribers |
 
-Fronend <-> Backend: HTTP
-Backend <-> MongoDB: MongoDB Wire
-Backend <-> DeepStack: REST
+### Communication Interfaces Between Services
+
+Frontend <-> Backend: HTTP  
+Backend <-> MongoDB: MongoDB Wire  
+Backend <-> DeepStack: REST  
 Backend <-> Email sender: SMTP
 
-### Backend által használt technológiák
+### Backend Technologies Used
 
 - Express (Webserver)
 - EJS (Server-side rendering)
@@ -125,45 +126,45 @@ Backend <-> Email sender: SMTP
 - Axios (HTTP Client)
 - Nodemailer (SMTP client)
 
-### Projekt struktúra
+### Project Structure
 
 ```
 📁 src/
-├── models/               # Adatbázis séma objektumok
+├── models/               # Database schema objects
 ├── views/
-│   └── layouts/          # Ejs layout modellek
-│   └── index.ejs         # Nézetek
+│   └── layouts/          # Ejs layout templates
+│   └── index.ejs
 │   └── upload.ejs
 │   └── subscribe.ejs
-├── public/               # statikus fájlok
+├── public/
 ├── index.js
 ├── .env
 └── package.json
 ```
 
-### Használt adatszerkezetek
+### Data Structures Used
 
-#### Képek tárolása (Image)
+#### Image Storage (Image)
 
-MongoDB [GridFS](https://www.mongodb.com/docs/manual/core/gridfs/) megoldás (Mongo maximális rekord méret miatt darabolás)
+MongoDB [GridFS](https://www.mongodb.com/docs/manual/core/gridfs/) solution (splitting due to Mongo's max record size)
 
-Beépített ```files collection``` (rövidített változat)
+Built-in `files collection` (shortened format)
 
 ```json
 {
   "_id" : "_id",
   "uploadDate" : "2025-04-18T12:00:00Z",
-  "filename" : "kep-hash.jpg",
+  "filename" : "image-hash.jpg",
   "metadata" : {},
 }
 ```
 
-- filename: a feltöltött fájl neve
-- uploadDate: feltöltés időpontja
+- filename: name of the uploaded file
+- uploadDate: time of upload
 
-#### Képek metaadat tárolása (Image metadata)
+#### Image Metadata Storage
 
-A collection ```metadata``` attribútuma.
+Stored in the ```metadata``` attribute of the collection.
 
 ```json
 {
@@ -181,12 +182,12 @@ A collection ```metadata``` attribútuma.
 }
 ```
 
-- description: képhez tartozó leírás
-- peopleDetected: észlelt emberek száma
-- detections: bekeretezett alakok koordinátái
-- imageUrl: elérési út a képfájlhoz
+- description: text description of the image
+- peopleDetected: number of people detected
+- detections: coordinates of the bounding boxes
+- imageUrl: path to the image file
 
-#### Feliratkozó (Subscriber)
+#### Subscriber
 
 ```json
 {
@@ -196,6 +197,6 @@ A collection ```metadata``` attribútuma.
 }
 ```
 
-- email: a felhasználó e-mail címe
-- subscribedAt: mikor iratkozott fel
-- isActive: aktív-e a feliratkozás
+- email: user's email address
+- subscribedAt: time of subscription
+- isActive: whether the subscription is active
